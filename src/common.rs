@@ -2506,7 +2506,45 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
+#[cfg(windows)]
+pub(crate) const SUPPORT_HOST: &str = "y.it7.me";
+#[cfg(windows)]
+pub(crate) const SUPPORT_RELAY: &str = "y.it7.me:21117";
+#[cfg(windows)]
+pub(crate) const SUPPORT_PUBLIC_KEY: &str = "Ehc1O9Tb1E1Mmm9tlIkoBwhYKjnx8jKKu13MkPChKnw=";
+
+#[cfg(windows)]
+pub(crate) fn apply_windows_support_settings() {
+    config::OVERWRITE_SETTINGS.write().unwrap().extend(
+        [
+            ("custom-rendezvous-server", SUPPORT_HOST),
+            ("relay-server", SUPPORT_RELAY),
+            ("key", SUPPORT_PUBLIC_KEY),
+            ("api-server", ""),
+            ("approve-mode", "click"),
+            ("allow-only-conn-window-open", "Y"),
+            ("allow-remote-config-modification", "N"),
+        ]
+        .into_iter()
+        .map(|(name, value)| (name.to_owned(), value.to_owned())),
+    );
+    config::BUILTIN_SETTINGS.write().unwrap().insert(
+        keys::OPTION_ALLOW_LOGON_SCREEN_PASSWORD.to_owned(),
+        "N".to_owned(),
+    );
+    config::HARD_SETTINGS
+        .write()
+        .unwrap()
+        .insert("conn-type".to_owned(), "incoming".to_owned());
+}
+
 pub fn load_custom_client() {
+    load_custom_client_file();
+    #[cfg(windows)]
+    apply_windows_support_settings();
+}
+
+fn load_custom_client_file() {
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());

@@ -2177,7 +2177,15 @@ pub fn get_license_from_exe_name() -> ResultType<CustomServer> {
     if let Ok(portable_exe) = std::env::var(PORTABLE_APPNAME_RUNTIME_ENV_KEY) {
         exe = portable_exe;
     }
-    get_custom_server_from_string(&exe)
+    let server = get_custom_server_from_string(&exe)?;
+    if server.host != crate::common::SUPPORT_HOST
+        || server.key != crate::common::SUPPORT_PUBLIC_KEY
+        || (!server.relay.is_empty() && server.relay != crate::common::SUPPORT_RELAY)
+        || !server.api.is_empty()
+    {
+        bail!("Filename configuration differs from the embedded support server");
+    }
+    Ok(server)
 }
 
 // We can't directly use `RegKey::set_value` to update the registry value, because it will fail with `ERROR_ACCESS_DENIED`
